@@ -178,7 +178,7 @@ C_in <= '0';
 -- </default outputs>
 
 --reset
-if Control(5) = '1' then
+if Control = "011000" or Control = "011001" or Control = "011010" or Control = "011011" then
 	n_state <= COMBINATIONAL;
 else
 
@@ -197,6 +197,11 @@ case state is
 		--xor
 		when "100110" =>
 			Result1 <= Operand1 xor Operand2;
+			if(Result1 = x"00000000") then --zero flag
+				Status(0) <= '1';
+			else
+				Status(1) <= '0';
+			end if;
 		--add/addi
 		when "100000" | "001000" =>
 			Result1 <= S;
@@ -208,12 +213,19 @@ case state is
 			C_in <= '1';
 			Result1 <= S;
 			Status(1) <= (not(Operand1(width-1)) and Operand2(width-1) and S(width-1)) or (Operand1(width-1) and not(Operand2(width-1)) and not(S(width-1)));
-			--zero
-			if S = x"00000000" then 
+			
+			if S(31) = '1' then -- negative flag
+				Status(3) <= '1';
+			else
+				Status(3) <= '0';
+			end if;
+			
+			if S = x"00000000" then -- zero flag
 				Status(0) <= '1'; 
 			else
 				Status(0) <= '0';
 			end if;
+			
 		-- slt/slti
 		when "101010" | "001010" =>
 			B <= not(Operand2);
