@@ -33,7 +33,7 @@ Port (Clk			: in	STD_LOGIC;
 		Operand2		: in	STD_LOGIC_VECTOR (width-1 downto 0);
 		Result1		: out	STD_LOGIC_VECTOR (width-1 downto 0);
 		Result2		: out	STD_LOGIC_VECTOR (width-1 downto 0);
-		Status		: out	STD_LOGIC_VECTOR (2 downto 0); -- busy (multicycle only), overflow (add and sub), zero (sub)
+		Status		: out	STD_LOGIC_VECTOR (3 downto 0); -- busy (multicycle only), overflow (add and sub), zero (sub)
 		Debug			: out	STD_LOGIC_VECTOR (width-1 downto 0));		
 end ALU;
 
@@ -184,26 +184,26 @@ else
 
 case state is
 	when COMBINATIONAL =>
-		case Control(4 downto 0) is
+		case Control(5 downto 0) is
 		--and
-		when "00000" =>   -- takes 0 cycles to execute
+		when "100100" =>   -- takes 0 cycles to execute
 			Result1 <= Operand1 and Operand2;
 		--or/ori
-		when "00001" | "001101" =>
+		when "100101" | "001101" =>
 			Result1 <= Operand1 or Operand2;
 		--nor
-		when "01100" => 
+		when "100111" => 
 			Result1 <= Operand1 nor Operand2;
 		--xor
-		when "00100" =>
+		when "100110" =>
 			Result1 <= Operand1 xor Operand2;
 		--add/addi
-		when "00010" | "001000" =>
+		when "100000" | "001000" =>
 			Result1 <= S;
 			-- overflow
 			Status(1) <= ( Operand1(width-1) xnor  Operand2(width-1) )  and ( Operand2(width-1) xor S(width-1) );
 		-- sub
-		when "00110" =>
+		when "100010" =>
 			B <= not(Operand2);
 			C_in <= '1';
 			Result1 <= S;
@@ -215,7 +215,7 @@ case state is
 				Status(0) <= '0';
 			end if;
 		-- slt/slti
-		when "00111" | "001010" =>
+		when "101010" | "001010" =>
 			B <= not(Operand2);
 			C_in <= '1';
 			temp_overflow := (not(Operand1(width-1)) and Operand2(width-1) and S(width-1)) or (Operand1(width-1) and not(Operand2(width-1)) and not(S(width-1)));
@@ -227,7 +227,7 @@ case state is
 				Result1 <= x"00000000";
 			end if;
 		-- sltu
-		when "01110" =>
+		when "101011" =>
 			B <= not(Operand2);
 			C_in <= '1';
 			if(C_out = '0') then
@@ -236,22 +236,22 @@ case state is
 				Result1 <= x"00000000";
 			end if;
 		-- sll
-		when "00101" =>
+		when "000000" =>
 			dir_right <= '0';
 			arith_flag <= '0'; -- doesn't matter, actually...
 			Result1 <= shift_output;
 		-- srl
-		when "01101" =>
+		when "000010" =>
 			dir_right <= '1';
 			arith_flag <= '0';
 			Result1 <= shift_output;
 		-- sra
-		when "01001" =>
+		when "000011" =>
 			dir_right <= '1';
 			arith_flag <= Operand1(width-1);
 			Result1 <= shift_output;
 		-- multi-cycle operations
-		when "10000" | "10001" | "10010" | "10011" => 
+		when "011000" | "011001" | "011010" | "011011" => 
 			n_state <= MULTI_CYCLE;
 			Status(2) <= '1';
 		-- default cases (already covered)
@@ -299,7 +299,7 @@ begin
 			case Control(4 downto 0) is
 			
 				-- mul
-				when "10000" | "10001" =>
+				when "011000" | "011001" =>
 					if(state = COMBINATIONAL) then
 						mul_reset <= '1';
 						if(Control(0) = '0') then
@@ -320,7 +320,7 @@ begin
 					end if;
 				
 				-- div
-				when "10010" =>
+				when "011010" =>
 					if(state = COMBINATIONAL) then
 						div_reset <= '1';
 						if(Operand1(31) = '1') then -- operand1 is negative, change to positive (2's complement)
@@ -355,7 +355,7 @@ begin
 					end if;
 					
 				-- divu 
-				when "10011" =>
+				when "011011" =>
 					if(state = COMBINATIONAL) then
 						div_reset <= '1';
 						div_operand1 <= Operand1;

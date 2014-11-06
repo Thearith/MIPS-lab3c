@@ -59,7 +59,7 @@ component ALU is
 			ALU_InB 		   : in  STD_LOGIC_VECTOR (31 downto 0);
 			ALU_OutA 		: out STD_LOGIC_VECTOR (31 downto 0);
 			ALU_OutB 		: out STD_LOGIC_VECTOR (31 downto 0);
-			ALU_Status		: out STD_LOGIC (2 downto 0);
+			ALU_Status		: out STD_LOGIC (3 downto 0);
 			ALU_Debug      : out STD_LOGIC(31 downto 0));
 end component;
 
@@ -111,7 +111,7 @@ end component;
 	signal	ALU_OutA 		:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	ALU_OutB 		:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	ALU_Control	   :  STD_LOGIC_VECTOR (5 downto 0);
-	signal	ALU_Status		:  STD_LOGIC;			
+	signal	ALU_Status		:  STD_LOGIC (3 downto 0);			
 	signal   ALU_Debug      :  STD_LOGIC_VECTOR (31 downto 0);
 
 ----------------------------------------------------------------
