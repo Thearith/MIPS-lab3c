@@ -42,17 +42,18 @@ architecture arch_MIPS of MIPS is
 ----------------------------------------------------------------
 component PC is
 	Port(	
-			PC_in 	: in STD_LOGIC_VECTOR (31 downto 0);
-			PC_out 	: out STD_LOGIC_VECTOR (31 downto 0);
-			RESET		: in STD_LOGIC;
-			CLK		: in STD_LOGIC);
+			PC_in 	    : in STD_LOGIC_VECTOR (31 downto 0);
+			PC_out 	    : out STD_LOGIC_VECTOR (31 downto 0);
+			Busy_Status  : in  STD_LOGIC;
+			RESET		    : in STD_LOGIC;
+			CLK		    : in STD_LOGIC);
 end component;
 
 ----------------------------------------------------------------
 -- ALU
 ----------------------------------------------------------------
 component ALU is
-    Port ( 	
+    Port ( 
 			CLK            : in STD_LOGIC;
 			Control		: in	STD_LOGIC_VECTOR (5 downto 0);
 			Operand1		: in	STD_LOGIC_VECTOR (31 downto 0);
@@ -118,6 +119,7 @@ end component;
 -- PC Signals
 ----------------------------------------------------------------
 	signal	PC_in 		:  STD_LOGIC_VECTOR (31 downto 0);
+	signal   Busy_Status :  STD_LOGIC;
 	signal	PC_out 		:  STD_LOGIC_VECTOR (31 downto 0);
 
 ----------------------------------------------------------------
@@ -187,7 +189,8 @@ begin
 PC1				: PC port map
 						(
 						PC_in 	=> PC_in, 
-						PC_out 	=> PC_out, 
+						PC_out 	=> PC_out,
+						Busy_Status => Busy_Status,
 						RESET 	=> RESET,
 						CLK 		=> CLK
 						);
@@ -318,7 +321,8 @@ PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' els
 		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and (ALU_Status(0) = '1' or ALU_Status(3) = '1') else -- beq, bgez
 		     PC_next;
 
-PC_in <= PC_temp when ALU_Status(2) = '0';
+PC_in <= PC_temp;
+Busy_Status <= ALU_Status(2); -- get busy status to check if alu has completed its process
 
 end arch_MIPS;
 

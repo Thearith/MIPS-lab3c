@@ -187,6 +187,8 @@ case state is
 		--and
 		when "100100" =>   -- takes 0 cycles to execute
 			Result1 <= Operand1 and Operand2;
+			
+		--andu
 		
 		--or/ori
 		when "100101" | "001101" =>

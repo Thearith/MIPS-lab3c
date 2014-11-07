@@ -21,10 +21,11 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity PC is
-	Port(	PC_in 	: in STD_LOGIC_VECTOR (31 downto 0);
-			PC_out 	: out STD_LOGIC_VECTOR (31 downto 0) := x"00400000";
-			RESET		: in STD_LOGIC;
-			CLK		: in STD_LOGIC);
+	Port(	PC_in 	    : in STD_LOGIC_VECTOR (31 downto 0);
+			PC_out 	    : out STD_LOGIC_VECTOR (31 downto 0) := x"00400000";
+			Busy_Status  : in  STD_LOGIC;
+			RESET		    : in STD_LOGIC;
+			CLK		    : in STD_LOGIC);
 end PC;
 
 
@@ -37,7 +38,9 @@ begin
 	if RESET = '1' then
 		PC_out <= x"00400000";
 	elsif CLK'event and CLK = '1' then
-		PC_out <= PC_in;
+		if Busy_Status = '0' then
+			PC_out <= PC_in;
+		end if;
 	end if;
 	
 end process;
