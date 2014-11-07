@@ -326,7 +326,7 @@ LO_In <= ALU_OutA;
 -- updating PC
 PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' else -- jump
 			  ReadData1_Reg  when JR = '1' else -- JR
-		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and (ALU_Status(0) = '1' or ALU_Status(3) = '1') else -- beq, bgez
+		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and (ALU_Status(0) = '1' or (BGEZ = '1' and ALU_Status(3) = '0')) else -- beq, bgez
 		     PC_next;
 
 PC_in <= PC_temp;
