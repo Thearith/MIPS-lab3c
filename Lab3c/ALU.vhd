@@ -33,10 +33,9 @@ Port (Clk			: in	STD_LOGIC;
 		Operand2		: in	STD_LOGIC_VECTOR (width-1 downto 0);
 		Result1		: out	STD_LOGIC_VECTOR (width-1 downto 0);
 		Result2		: out	STD_LOGIC_VECTOR (width-1 downto 0);
-		Status		: out	STD_LOGIC_VECTOR (3 downto 0); -- busy (multicycle only), overflow (add and sub), zero (sub)
+		Status		: out	STD_LOGIC_VECTOR (3 downto 0); -- negative (sub), busy (multicycle only), overflow (add and sub), zero (sub)
 		Debug			: out	STD_LOGIC_VECTOR (width-1 downto 0));		
 end ALU;
-
 
 ------------------------------------------------------------------
 -- ALU Architecture
@@ -178,7 +177,7 @@ C_in <= '0';
 -- </default outputs>
 
 --reset
-if Control = "011000" or Control = "011001" or Control = "011010" or Control = "011011" then
+if Control /= "011000" and Control /= "011001" and Control /= "011010" and Control /= "011011" then
 	n_state <= COMBINATIONAL;
 else
 
@@ -188,25 +187,25 @@ case state is
 		--and
 		when "100100" =>   -- takes 0 cycles to execute
 			Result1 <= Operand1 and Operand2;
+		
 		--or/ori
 		when "100101" | "001101" =>
 			Result1 <= Operand1 or Operand2;
+		
 		--nor
 		when "100111" => 
 			Result1 <= Operand1 nor Operand2;
+		
 		--xor
 		when "100110" =>
 			Result1 <= Operand1 xor Operand2;
-			if(Result1 = x"00000000") then --zero flag
-				Status(0) <= '1';
-			else
-				Status(1) <= '0';
-			end if;
+		
 		--add/addi
 		when "100000" | "001000" =>
 			Result1 <= S;
 			-- overflow
 			Status(1) <= ( Operand1(width-1) xnor  Operand2(width-1) )  and ( Operand2(width-1) xor S(width-1) );
+		
 		-- sub
 		when "100010" =>
 			B <= not(Operand2);
@@ -238,6 +237,7 @@ case state is
 			else
 				Result1 <= x"00000000";
 			end if;
+			
 		-- sltu
 		when "101011" =>
 			B <= not(Operand2);
@@ -247,21 +247,25 @@ case state is
 			else
 				Result1 <= x"00000000";
 			end if;
-		-- sll
-		when "000000" =>
+			
+		-- sll / sllv
+		when "000000" | "000100" =>
 			dir_right <= '0';
 			arith_flag <= '0'; -- doesn't matter, actually...
 			Result1 <= shift_output;
-		-- srl
-		when "000010" =>
+			
+		-- srl / srlv
+		when "000010" | "000110" =>
 			dir_right <= '1';
 			arith_flag <= '0';
 			Result1 <= shift_output;
-		-- sra
-		when "000011" =>
+			
+		-- sra / srav
+		when "000011" | "000111" =>
 			dir_right <= '1';
 			arith_flag <= Operand1(width-1);
 			Result1 <= shift_output;
+			
 		-- multi-cycle operations
 		when "011000" | "011001" | "011010" | "011011" => 
 			n_state <= MULTI_CYCLE;
@@ -269,6 +273,7 @@ case state is
 		-- default cases (already covered)
 		when others=> null;
 		end case;
+		
 	when MULTI_CYCLE => 
 		if done = '1' then
 			Result1 <= Result1_multi;
@@ -308,7 +313,7 @@ begin
 		end if;
 		done <= '0';
 		if n_state = MULTI_CYCLE then
-			case Control(4 downto 0) is
+			case Control(5 downto 0) is
 			
 				-- mul
 				when "011000" | "011001" =>

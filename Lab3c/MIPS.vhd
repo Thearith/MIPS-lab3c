@@ -54,13 +54,13 @@ end component;
 component ALU is
     Port ( 	
 			CLK            : in STD_LOGIC;
-			ALU_Control	   : in  STD_LOGIC_VECTOR (5 downto 0);
-			ALU_InA 		   : in  STD_LOGIC_VECTOR (31 downto 0);				
-			ALU_InB 		   : in  STD_LOGIC_VECTOR (31 downto 0);
-			ALU_OutA 		: out STD_LOGIC_VECTOR (31 downto 0);
-			ALU_OutB 		: out STD_LOGIC_VECTOR (31 downto 0);
-			ALU_Status		: out STD_LOGIC (3 downto 0);
-			ALU_Debug      : out STD_LOGIC(31 downto 0));
+			Control		: in	STD_LOGIC_VECTOR (5 downto 0);
+			Operand1		: in	STD_LOGIC_VECTOR (31 downto 0);
+			Operand2		: in	STD_LOGIC_VECTOR (31 downto 0);
+			Result1		: out	STD_LOGIC_VECTOR (31 downto 0);
+			Result2		: out	STD_LOGIC_VECTOR (31 downto 0);
+			Status		: out	STD_LOGIC_VECTOR (3 downto 0); -- negative (sub), busy (multicycle only), overflow (add and sub), zero (sub)
+			Debug			: out	STD_LOGIC_VECTOR (31 downto 0));
 end component;
 
 ----------------------------------------------------------------
@@ -69,17 +69,21 @@ end component;
 component ControlUnit is
     Port ( 	
 			opcode 		: in   STD_LOGIC_VECTOR (5 downto 0);
+			ALU_Funct   : in   STD_LOGIC_VECTOR (5 downto 0);
 			ALUOp 		: out  STD_LOGIC_VECTOR (1 downto 0);
-			Branch 		: out  STD_LOGIC;
-			Jump	 		: out  STD_LOGIC;				
+			Branch 		: out  STD_LOGIC;		
+			Jump	 		: out  STD_LOGIC;	
 			MemRead 		: out  STD_LOGIC;	
 			MemtoReg 	: out  STD_LOGIC;	
 			InstrtoReg	: out  STD_LOGIC; -- true for LUI. When true, Instr(15 downto 0)&x"0000" is written to rt
 			MemWrite		: out  STD_LOGIC;	
-			ALUSrc 		: out  STD_LOGIC;	
+			ALUSrc 		: out  STD_LOGIC; 
 			SignExtend 	: out  STD_LOGIC; -- false for ORI 
 			RegWrite		: out  STD_LOGIC;	
-			RegDst		: out  STD_LOGIC);
+			RegDst		: out  STD_LOGIC;
+			HILORead    : out  STD_LOGIC_VECTOR (1 downto 0);
+			HILOWrite   : out  STD_LOGIC;
+			isShftAmnt  : out  STD_LOGIC);
 end component;
 
 ----------------------------------------------------------------
@@ -98,6 +102,19 @@ component RegFile is
 end component;
 
 ----------------------------------------------------------------
+-- HILO Registers
+----------------------------------------------------------------
+component HILO is
+	Port (
+		CLK			: in	STD_LOGIC;
+		HILORead    : in  STD_LOGIC_VECTOR(1 downto 0);
+		HILOWrite   : in  STD_LOGIC;
+		HI_In       : in  STD_LOGIC_VECTOR(31 downto 0);
+		LO_In       : in  STD_LOGIC_VECTOR(31 downto 0);
+ 		HILO_Out    : out STD_LOGIC_VECTOR(31 downto 0));
+end component;
+
+----------------------------------------------------------------
 -- PC Signals
 ----------------------------------------------------------------
 	signal	PC_in 		:  STD_LOGIC_VECTOR (31 downto 0);
@@ -111,13 +128,14 @@ end component;
 	signal	ALU_OutA 		:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	ALU_OutB 		:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	ALU_Control	   :  STD_LOGIC_VECTOR (5 downto 0);
-	signal	ALU_Status		:  STD_LOGIC (3 downto 0);			
+	signal	ALU_Status		:  STD_LOGIC_VECTOR (3 downto 0);			
 	signal   ALU_Debug      :  STD_LOGIC_VECTOR (31 downto 0);
 
 ----------------------------------------------------------------
 -- Control Unit Signals
 ----------------------------------------------------------------				
  	signal	opcode 		:  STD_LOGIC_VECTOR (5 downto 0);
+	signal   ALU_Funct   :  STD_LOGIC_VECTOR (5 downto 0);
 	signal	ALUOp 		:  STD_LOGIC_VECTOR (1 downto 0);
 	signal	Branch 		:  STD_LOGIC;
 	signal	Jump	 		:  STD_LOGIC;	
@@ -127,6 +145,9 @@ end component;
 	signal	SignExtend 	: 	STD_LOGIC;
 	signal	RegWrite		: 	STD_LOGIC;	
 	signal	RegDst		:  STD_LOGIC;
+	signal   HILORead    :  STD_LOGIC_VECTOR (1 downto 0);
+	signal   HILOWrite   :  STD_LOGIC;
+	signal   isShftAmnt  :  STD_LOGIC;
 
 ----------------------------------------------------------------
 -- Register File Signals
@@ -137,6 +158,14 @@ end component;
 	signal	ReadData2_Reg 	:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	WriteAddr_Reg	:  STD_LOGIC_VECTOR (4 downto 0); 
 	signal	WriteData_Reg 	:  STD_LOGIC_VECTOR (31 downto 0);
+	
+----------------------------------------------------------------
+-- HILO Signals
+----------------------------------------------------------------
+
+	signal   HI_In          :  STD_LOGIC_VECTOR(31 downto 0);
+	signal   LO_In          :  STD_LOGIC_VECTOR(31 downto 0);
+ 	signal 	HILO_Out       :  STD_LOGIC_VECTOR(31 downto 0);
 
 ----------------------------------------------------------------
 -- Decode Signals
@@ -169,13 +198,13 @@ PC1				: PC port map
 ALU1 				: ALU port map
 						(
 						CLK            => CLK,
-						ALU_Control    => ALU_Control,
-						ALU_InA 		   => ALU_InA, 
-						ALU_InB 		   => ALU_InB, 
-						ALU_OutA 		=> ALU_OutA, 
-						ALU_OutB 		=> ALU_OutB, 
-						ALU_Status  	=> ALU_Status,
-						ALU_Debug      => ALU_Debug
+						Control        => ALU_Control,
+						Operand1 		=> ALU_InA, 
+						Operand2 		=> ALU_InB, 
+						Result1 			=> ALU_OutA, 
+						Result2 			=> ALU_OutB, 
+						Status  			=> ALU_Status,
+						Debug      		=> ALU_Debug
 						);
 						
 ----------------------------------------------------------------
@@ -183,7 +212,8 @@ ALU1 				: ALU port map
 ----------------------------------------------------------------
 ControlUnit1 	: ControlUnit port map
 						(
-						opcode 		=> opcode, 
+						opcode 		=> opcode,
+                  ALU_Funct   => ALU_Funct,						
 						ALUOp 		=> ALUOp, 
 						Branch 		=> Branch, 
 						Jump 			=> Jump, 
@@ -194,7 +224,10 @@ ControlUnit1 	: ControlUnit port map
 						ALUSrc 		=> ALUSrc, 
 						SignExtend 	=> SignExtend, 
 						RegWrite 	=> RegWrite, 
-						RegDst 		=> RegDst
+						RegDst 		=> RegDst,
+						HILORead    => HILORead,
+						HILOWrite   => HILOWrite,
+						isShftAmnt  => isShftAmnt
 						);
 						
 ----------------------------------------------------------------
@@ -211,6 +244,20 @@ RegFile1			: RegFile port map
 						RegWrite 		=> RegWrite,
 						CLK 				=> CLK				
 						);
+						
+----------------------------------------------------------------
+-- Register file port map
+----------------------------------------------------------------
+
+HILO1           : HILO   port map
+						(
+						CLK			   =>   CLK,
+						HILORead       =>   HILORead,
+						HILOWrite      =>   HILOWrite,
+						HI_In          =>   HI_In,
+						LO_In          =>   LO_In,
+						HILO_Out       =>   HILO_Out
+						);
 
 ----------------------------------------------------------------
 -- Processor logic
@@ -222,15 +269,16 @@ PC_next <= PC_out + X"00000004";
 
 -- Decode stage
 opcode <= Instr(31 downto 26); -- Updating Control Unit
+ALU_Funct <= Instr(5 downto 0); -- Updating ALU Function
 
-ImmData <= Instr(15 downto 0) & "0000000000000000" when InstrtoReg = '1' else
+ImmData <= "000000000000000000000000000" & Instr(10 downto 6) when isShftAmnt = '1'  else
+           Instr(15 downto 0) & "0000000000000000" when InstrtoReg = '1' else
 			  "0000000000000000" & Instr(15 downto 0) when Instr(15) = '0' or SignExtend = '0' else
            "1111111111111111" & Instr(15 downto 0);
 
 -- Reading from registers
 ReadAddr1_Reg <= Instr(25 downto 21);
 ReadAddr2_Reg <= Instr(20 downto 16);
-
 
 WriteAddr_Reg <= Instr(20 downto 16) when RegDst = '0' else
 				     Instr(15 downto 11);
@@ -243,26 +291,34 @@ ALU_InB <= ReadData2_Reg when ALUSrc = '0' else
 
 -- changing ALU Control
 with ALUOp select
-ALU_Control <= Instr(5 downto 0)   when "10", -- r type instructions
+ALU_Control <= Instr(5 downto 0)   when "10",          -- r type instructions
 	            "100000"            when "00",          -- sw/ lw uses alu.add
-			      "100110"            when "01",          -- beq uses alu.add
-					Instr(31 downto 26) when others;        -- all immediate alu instr
+			      "100010"            when "01",          -- beq/bgez uses alu.sub
+					Instr(31 downto 26) when others;        -- all immediate uses their opcode
 
 -- calling for MemRead
 Addr_Data <= ALU_OutA;
 
--- calling for RegWrite
-WriteData_Reg <= ALU_OutA when MemToReg = '0' else
-				     Data_in;
 -- Updating data out					  
 Data_out <= ReadData2_Reg;
 
+-- HILO_Out is read when HILORead signal is updated
+-- calling for RegWrite
+WriteData_Reg <= HILO_Out when HILORead = "10" or HILORead = "01" else -- MFHI or MFLO 
+					  ALU_OutA when MemToReg = '0' and HILOWrite = '0' else -- ALU use HILOWrite to prevent writing mult/div results to general reg
+				     Data_in  when MemToReg = '1' and HILOWrite = '0' else  -- LW
+					  WriteData_Reg;
+					  
+-- calling to write in HILO registers
+HI_In <= ALU_OutB;
+LO_In <= ALU_OutA;
+
 -- updating PC
-PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' else
-		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and ALU_Status(0) = '1' else
+PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' else -- jump
+		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and (ALU_Status(0) = '1' or ALU_Status(3) = '1') else -- beq, bgez
 		     PC_next;
 
-PC_in <= PC_temp;
+PC_in <= PC_temp when ALU_Status(2) = '0';
 
 end arch_MIPS;
 
