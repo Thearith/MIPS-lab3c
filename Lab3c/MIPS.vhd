@@ -72,8 +72,10 @@ component ControlUnit is
 			opcode 		: in   STD_LOGIC_VECTOR (5 downto 0);
 			ALU_Funct   : in   STD_LOGIC_VECTOR (5 downto 0);
 			ALUOp 		: out  STD_LOGIC_VECTOR (1 downto 0);
-			Branch 		: out  STD_LOGIC;		
-			Jump	 		: out  STD_LOGIC;	
+			Branch 		: out  STD_LOGIC;
+			BGEZ        : out  STD_LOGIC;
+			Jump	 		: out  STD_LOGIC;
+			JR          : out  STD_LOGIC;
 			MemRead 		: out  STD_LOGIC;	
 			MemtoReg 	: out  STD_LOGIC;	
 			InstrtoReg	: out  STD_LOGIC; -- true for LUI. When true, Instr(15 downto 0)&x"0000" is written to rt
@@ -140,7 +142,9 @@ end component;
 	signal   ALU_Funct   :  STD_LOGIC_VECTOR (5 downto 0);
 	signal	ALUOp 		:  STD_LOGIC_VECTOR (1 downto 0);
 	signal	Branch 		:  STD_LOGIC;
-	signal	Jump	 		:  STD_LOGIC;	
+	signal   BGEZ        :  STD_LOGIC;
+	signal	Jump	 		:  STD_LOGIC;
+	signal   JR          :  STD_LOGIC;
 	signal	MemtoReg 	:  STD_LOGIC;
 	signal 	InstrtoReg	: 	STD_LOGIC;		
 	signal	ALUSrc 		:  STD_LOGIC;	
@@ -219,7 +223,9 @@ ControlUnit1 	: ControlUnit port map
                   ALU_Funct   => ALU_Funct,						
 						ALUOp 		=> ALUOp, 
 						Branch 		=> Branch, 
+						BGEZ        => BGEZ,
 						Jump 			=> Jump, 
+						JR          => JR,
 						MemRead 		=> MemRead, 
 						MemtoReg 	=> MemtoReg, 
 						InstrtoReg 	=> InstrtoReg, 
@@ -290,6 +296,7 @@ WriteAddr_Reg <= Instr(20 downto 16) when RegDst = '0' else
 ALU_InA <= ReadData1_Reg when InstrtoReg = '0' else
 			  X"00000000";
 ALU_InB <= ReadData2_Reg when ALUSrc = '0' else
+			  X"00000000" when BGEZ = '1' else
 	        ImmData;
 
 -- changing ALU Control
@@ -318,6 +325,7 @@ LO_In <= ALU_OutA;
 
 -- updating PC
 PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' else -- jump
+			  ReadData1_Reg  when JR = '1' else -- JR
 		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and (ALU_Status(0) = '1' or ALU_Status(3) = '1') else -- beq, bgez
 		     PC_next;
 

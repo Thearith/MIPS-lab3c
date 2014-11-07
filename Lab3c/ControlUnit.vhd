@@ -23,8 +23,10 @@ entity ControlUnit is
     Port ( 	opcode 		: in   STD_LOGIC_VECTOR (5 downto 0);
 				ALU_Funct   : in   STD_LOGIC_VECTOR (5 downto 0);
 				ALUOp 		: out  STD_LOGIC_VECTOR (1 downto 0);
-				Branch 		: out  STD_LOGIC;		
-				Jump	 		: out  STD_LOGIC;	
+				Branch 		: out  STD_LOGIC;	
+				BGEZ        : out  STD_LOGIC;
+				Jump	 		: out  STD_LOGIC;
+				JR          : out  STD_LOGIC;
 				MemRead 		: out  STD_LOGIC;	
 				MemtoReg 	: out  STD_LOGIC;	
 				InstrtoReg	: out  STD_LOGIC;
@@ -55,8 +57,10 @@ begin
 			MemWrite <= '0';
 			Branch <= '0';
 			Jump <= '0';
+			JR <= '0';
 			ALUOp <= "10";
 			SignExtend <= '1';
+			BGEZ <= '0';
 			InstrtoReg <= '0';
 			
 			case ALU_Funct is
@@ -101,7 +105,9 @@ begin
 			MemRead <= '1';
 			MemWrite <= '0';
 			Branch <= '0';
+			BGEZ <= '0';
 			Jump <= '0';
+			JR <= '0';
 			ALUOp <= "00";
 			SignExtend <= '1';
 			InstrtoReg <= '0';
@@ -117,15 +123,17 @@ begin
 			MemRead <= '0';
 			MemWrite <= '1';
 			Branch <= '0';
+			BGEZ <= '0';
 			Jump <= '0';
+			JR <= '0';
 			ALUOp <= "00";
 			SignExtend <= '1';
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
 		
-		-- beq/bgez
-		when "000100" | "000001" => 
+		-- beq
+		when "000100" => 
 			RegDst <= '-';
 			ALUSrc <= '0';
 			RegWrite <= '0';
@@ -134,6 +142,26 @@ begin
 			MemWrite <= '0';
 			Branch <= '1';
 			Jump <= '0';
+			JR <= '0';
+			BGEZ <= '0';
+			ALUOp <= "01";
+			SignExtend <= '1';
+			InstrtoReg <= '0';
+			HILORead <= "00";
+			HILOWrite <= '0';
+			
+		-- bgez
+		when "000001" =>
+			RegDst <= '-';
+			ALUSrc <= '0';
+			RegWrite <= '0';
+			MemtoReg <= '-';
+			MemRead <= '0';
+			MemWrite <= '0';
+			Branch <= '1';
+			BGEZ <= '1';
+			Jump <= '0';
+			JR <= '0';
 			ALUOp <= "01";
 			SignExtend <= '1';
 			InstrtoReg <= '0';
@@ -149,7 +177,27 @@ begin
 			MemRead <= '0';
 			MemWrite <= '0';
 			Branch <= '0';
+			BGEZ <= '0';
 			Jump <= '1';
+			JR <= '0';
+			ALUOp <= "01";
+			SignExtend <= '1';
+			InstrtoReg <= '0';
+			HILORead <= "00";
+			HILOWrite <= '0';
+			
+		-- jr
+		when "000000" =>
+			RegDst <= '0';
+			ALUSrc <= '0';
+			RegWrite <= '0';
+			MemtoReg <= '-';
+			MemRead <= '0';
+			MemWrite <= '0';
+			Branch <= '0';
+			Jump <= '0';
+			JR <= '1';
+			BGEZ <= '0';
 			ALUOp <= "01";
 			SignExtend <= '1';
 			InstrtoReg <= '0';
@@ -166,6 +214,8 @@ begin
 			MemWrite <= '0';
 			Branch <= '0';
 			Jump <= '0';
+			JR <= '0';
+			BGEZ <= '0';
 			ALUOp <= "11";
 			SignExtend <= '0';
 			InstrtoReg <= '0';
@@ -182,6 +232,8 @@ begin
 			MemWrite <= '0';
 			Branch <= '0';
 			Jump <= '0';
+			JR <= '0';
+			BGEZ <= '0';
 			ALUOp <= "00";
 			SignExtend <= '1';
 			InstrtoReg <= '1';
