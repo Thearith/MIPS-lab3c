@@ -163,7 +163,7 @@ COMBINATIONAL_PROCESS : process (
 variable temp_overflow : std_logic;
 begin
 -- <default outputs>
-Status(2 downto 0) <= "000"; -- both statuses '0' by default 
+Status(3 downto 0) <= "0000"; -- both statuses '0' by default 
 Result1 <= (others=>'0');
 Result2 <= (others=>'0');
 Debug <= (others=>'0');

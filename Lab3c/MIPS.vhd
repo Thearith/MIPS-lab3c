@@ -327,7 +327,7 @@ Data_out <= ReadData2_Reg;
 WriteData_Reg <= PC_out + X"00000008"  when AL = '1' else -- And link instr, send PC + 8 to register 31
 					  HILO_Out when HILORead = "10" or HILORead = "01" else -- MFHI or MFLO 
 					  ALU_OutA when MemToReg = '0'  else -- ALU use HILOWrite to prevent writing mult/div results to general reg
-				     Data_in  when MemToReg = '1';
+				     Data_in;
 					  
 -- calling to write in HILO registers
 HI_In <= ALU_OutB;
@@ -336,7 +336,7 @@ LO_In <= ALU_OutA;
 -- updating PC
 PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' else -- jump
 			  ReadData1_Reg  when JR = '1' else -- JR
-		    (ImmData(29 downto 0) & "00") +  PC_next when (Branch = '1' and ALU_Status(0) = '1') or (BGEZ = '1' and ALU_Status(3) = '0') else -- beq, bgez
+		    (ImmData(29 downto 0) & "00") +  PC_next when ((Branch = '1' and ALU_Status(0) = '1') or (BGEZ = '1' and ALU_Status(3) = '0')) else -- beq, bgez
 		     PC_next;
 
 PC_in <= PC_temp;

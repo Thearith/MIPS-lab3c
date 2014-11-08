@@ -46,235 +46,253 @@ end ControlUnit;
 architecture arch_ControlUnit of ControlUnit is  
 begin   
 
-process(opcode, ALU_Funct) is
+process(opcode, ALU_Funct, Rt_FirstBit) is
 begin
+
+ALUOp <= "00";
+Branch <= '0';		
+BGEZ  <= '0';     
+AL  <= '0';       
+Jump	<= '0'; 		
+JR    <= '0';     
+MemRead <= '0';	
+MemtoReg <= '0';	
+InstrtoReg <= '0';
+MemWrite	<= '0';	
+ALUSrc 	<= '0';	
+SignExtend <= '0';
+RegWrite	<= '0';	
+RegDst	<= '0';	
+HILORead   <= "00";
+HILOWrite  <= '0'; 
+isShift  <= '0';
 	
-	case opcode is
+case opcode is
 
-		-- R type instructions
-		when "000000" =>
-			RegDst <= '1';
-			MemtoReg <= '0';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '0';
-			Jump <= '0';
-			JR <= '0';
-			ALUOp <= "10";
-			SignExtend <= '1';
-			BGEZ <= '0';
-			InstrtoReg <= '0';
-			AL <= '0';
-			
-			case ALU_Funct is
-				when "000000" | "000010" | "000011" => -- sll, srl and sra 
-					ALUSrc <= '1';
-					isShift <= '1';
-					RegWrite <= '1';
-					
-					HILOWrite <= '0';
-					HILORead <= "00";
-				when "000100" | "000110" | "000111" => -- sllv, srlva and srav
-					ALUSrc <= '0';
-					isShift <= '1';
-					RegWrite <= '1';
-					
-					HILOWrite <= '0';
-					HILORead <= "00";
-				when "011000" | "011001" | "011010" | "011011" => -- mult, multu, div, divu
-					ALUSrc <= '0';
-					isShift <= '0';
-					RegWrite <= '0';
-					HILOWrite <= '1';
-					HILORead <= "00";
-				when "010000" => -- MFHI
-					ALUSrc <= '0';
-					RegWrite <= '1';
-					isShift <= '0';
-					
-					HILORead <= "10";
-					HILOWrite <= '0';
-				when "010010" => --MFLO
-					ALUSrc <= '0';
-					RegWrite <= '1';
-					isShift <= '0';
-					
-					HILORead <= "01";
-					HILOWrite <= '0';
-				when "001000" => -- JR
-					
+	-- R type instructions
+	when "000000" =>
+		RegDst <= '1';
+		MemtoReg <= '0';
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '0';
+		Jump <= '0';
+		JR <= '0';
+		ALUOp <= "10";
+		SignExtend <= '1';
+		BGEZ <= '0';
+		InstrtoReg <= '0';
+		AL <= '0';
+		
+		case ALU_Funct is
+			when "000000" | "000010" | "000011" => -- sll, srl and sra 
+				ALUSrc <= '1';
+				isShift <= '1';
+				RegWrite <= '1';
 				
-				when others => 
-					ALUSrc <= '0';
-					HILOWrite <= '0';
-					HILORead <= "00";
-					isShift <= '0';
-					RegWrite <= '1';
-			end case;
+				HILOWrite <= '0';
+				HILORead <= "00";
+			when "000100" | "000110" | "000111" => -- sllv, srlva and srav
+				ALUSrc <= '0';
+				isShift <= '1';
+				RegWrite <= '1';
+				
+				HILOWrite <= '0';
+				HILORead <= "00";
+			when "011000" | "011001" | "011010" | "011011" => -- mult, multu, div, divu
+				ALUSrc <= '0';
+				isShift <= '0';
+				RegWrite <= '0';
+				HILOWrite <= '1';
+				HILORead <= "00";
+			when "010000" => -- MFHI
+				ALUSrc <= '0';
+				RegWrite <= '1';
+				isShift <= '0';
+				
+				HILORead <= "10";
+				HILOWrite <= '0';
+			when "010010" => --MFLO
+				ALUSrc <= '0';
+				RegWrite <= '1';
+				isShift <= '0';
+				
+				HILORead <= "01";
+				HILOWrite <= '0';
+			
+			when others => 
+				ALUSrc <= '0';
+				HILOWrite <= '0';
+				HILORead <= "00";
+				isShift <= '0';
+				RegWrite <= '1';
+		end case;
 
-		-- lw
-		when "100011" => 
-			RegDst <= '0';
-			ALUSrc <= '1';
-			MemtoReg <= '1';
-			RegWrite <= '1';
-			MemRead <= '1';
-			MemWrite <= '0';
-			Branch <= '0';
-			BGEZ <= '0';
-			Jump <= '0';
-			JR <= '0';
-			ALUOp <= "00";
-			SignExtend <= '1';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			AL <= '0';
+	-- lw
+	when "100011" => 
+		RegDst <= '0';
+		ALUSrc <= '1';
+		MemtoReg <= '1';
+		RegWrite <= '1';
+		MemRead <= '1';
+		MemWrite <= '0';
+		Branch <= '0';
+		BGEZ <= '0';
+		Jump <= '0';
+		JR <= '0';
+		ALUOp <= "00";
+		SignExtend <= '1';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		AL <= '0';
 
-		-- sw
-		when "101011" => 
-			RegDst <= '-';
-			ALUSrc <= '1';
-			MemtoReg <= '-';
-			RegWrite <= '0';
-			MemRead <= '0';
-			MemWrite <= '1';
-			Branch <= '0';
-			BGEZ <= '0';
-			Jump <= '0';
-			JR <= '0';
-			ALUOp <= "00";
-			SignExtend <= '1';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			AL <= '0';
+	-- sw
+	when "101011" => 
+		RegDst <= '0'; -- doesnt matter
+		ALUSrc <= '1';
+		MemtoReg <= '0'; -- doesnt matter
+		RegWrite <= '0';
+		MemRead <= '0';
+		MemWrite <= '1';
+		Branch <= '0';
+		BGEZ <= '0';
+		Jump <= '0';
+		JR <= '0';
+		ALUOp <= "00";
+		SignExtend <= '1';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		AL <= '0';
+	
+	-- beq
+	when "000100" => 
+		RegDst <= '0'; -- doesnt matter
+		ALUSrc <= '0';
+		RegWrite <= '0';
+		MemtoReg <= '0'; -- doesnt matter
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '1';
+		Jump <= '0';
+		JR <= '0';
+		BGEZ <= '0';
+		ALUOp <= "01";
+		SignExtend <= '1';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		AL <= '0';
 		
-		-- beq
-		when "000100" => 
-			RegDst <= '-';
-			ALUSrc <= '0';
-			RegWrite <= '0';
-			MemtoReg <= '-';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '1';
-			Jump <= '0';
-			JR <= '0';
-			BGEZ <= '0';
-			ALUOp <= "01";
-			SignExtend <= '1';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			AL <= '0';
-			
-		-- bgez
-		when "000001" =>
-			RegDst <= '-';
-			ALUSrc <= '0';
-			MemtoReg <= '-';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '0';
-			BGEZ <= '1';
-			Jump <= '0';
-			JR <= '0';
-			ALUOp <= "01";
-			SignExtend <= '1';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			
-			RegWrite <= Rt_FirstBit;
-			AL <= Rt_FirstBit;
+	-- bgez
+	when "000001" =>
+		RegDst <= '0'; -- doesnt matter
+		ALUSrc <= '0';
+		MemtoReg <= '0'; -- doesnt matter
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '0';
+		BGEZ <= '1';
+		Jump <= '0';
+		JR <= '0';
+		ALUOp <= "01";
+		SignExtend <= '1';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		
+		RegWrite <= Rt_FirstBit;
+		AL <= Rt_FirstBit;
 
-		-- jump
-		when "000010" =>
-			RegDst <= '0';
-			ALUSrc <= '0';
-			RegWrite <= '0';
-			MemtoReg <= '-';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '0';
-			BGEZ <= '0';
-			Jump <= '1';
-			JR <= '0';
-			ALUOp <= "01";
-			SignExtend <= '1';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			AL <= '0';
-			
-		when "000011" =>
-			RegDst <= '0';
-			ALUSrc <= '0';
-			RegWrite <= '0';
-			MemtoReg <= '-';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '0';
-			BGEZ <= '0';
-			Jump <= '1';
-			JR <= '0';
-			ALUOp <= "01";
-			SignExtend <= '1';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			AL <= '1';
-			
-		-- ori, addi, slti
-		when "001101" | "001000" | "001010" => 
-			RegDst <= '0';
-			ALUSrc <= '1';
-			MemtoReg <= '0';
-			RegWrite <= '1';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '0';
-			Jump <= '0';
-			JR <= '0';
-			BGEZ <= '0';
-			ALUOp <= "11";
-			SignExtend <= '0';
-			InstrtoReg <= '0';
-			HILORead <= "00";
-			HILOWrite <= '0';
-			isShift <= '0';
-			AL <= '0';
+	-- jump
+	when "000010" =>
+		RegDst <= '0';
+		ALUSrc <= '0';
+		RegWrite <= '0';
+		MemtoReg <= '0'; -- doesnt matter
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '0';
+		BGEZ <= '0';
+		Jump <= '1';
+		JR <= '0';
+		ALUOp <= "01";
+		SignExtend <= '1';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		AL <= '0';
 		
-		-- lui	
-		when "001111" =>
-			RegDst <= '0';
-			ALUSrc <= '1';
-			MemtoReg <= '0';
-			RegWrite <= '1';
-			MemRead <= '0';
-			MemWrite <= '0';
-			Branch <= '0';
-			Jump <= '0';
-			JR <= '0';
-			BGEZ <= '0';
-			ALUOp <= "00";
-			SignExtend <= '1';
-			InstrtoReg <= '1';
-			HILORead <= "00";
-			HILOWrite <= '0';			
-			isShift <= '0';
-			AL <= '0';
-			
-		when others => null;
+	-- jal
+	when "000011" =>
+		RegDst <= '0';
+		ALUSrc <= '0';
+		RegWrite <= '0';
+		MemtoReg <= '0'; -- doesnt matter
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '0';
+		BGEZ <= '0';
+		Jump <= '1';
+		JR <= '0';
+		ALUOp <= "01";
+		SignExtend <= '1';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		AL <= '1';
 		
-	end case;
+	-- ori, addi, slti
+	when "001101" | "001000" | "001010" => 
+		RegDst <= '0';
+		ALUSrc <= '1';
+		MemtoReg <= '0';
+		RegWrite <= '1';
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '0';
+		Jump <= '0';
+		JR <= '0';
+		BGEZ <= '0';
+		ALUOp <= "11";
+		SignExtend <= '0';
+		InstrtoReg <= '0';
+		HILORead <= "00";
+		HILOWrite <= '0';
+		isShift <= '0';
+		AL <= '0';
+	
+	-- lui	
+	when "001111" =>
+		RegDst <= '0';
+		ALUSrc <= '1';
+		MemtoReg <= '0';
+		RegWrite <= '1';
+		MemRead <= '0';
+		MemWrite <= '0';
+		Branch <= '0';
+		Jump <= '0';
+		JR <= '0';
+		BGEZ <= '0';
+		ALUOp <= "00";
+		SignExtend <= '1';
+		InstrtoReg <= '1';
+		HILORead <= "00";
+		HILOWrite <= '0';			
+		isShift <= '0';
+		AL <= '0';
+		
+	when others => null;
+	
+end case;
+
 end process;
 
 end arch_ControlUnit;
