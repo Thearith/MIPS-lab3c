@@ -22,9 +22,11 @@ use IEEE.STD_LOGIC_unsigned.ALL;
 entity ControlUnit is
     Port ( 	opcode 		: in   STD_LOGIC_VECTOR (5 downto 0);
 				ALU_Funct   : in   STD_LOGIC_VECTOR (5 downto 0);
+				Rt_FirstBit : in   STD_LOGIC;
 				ALUOp 		: out  STD_LOGIC_VECTOR (1 downto 0);
 				Branch 		: out  STD_LOGIC;	
 				BGEZ        : out  STD_LOGIC;
+				AL          : out  STD_LOGIC;
 				Jump	 		: out  STD_LOGIC;
 				JR          : out  STD_LOGIC;
 				MemRead 		: out  STD_LOGIC;	
@@ -37,7 +39,7 @@ entity ControlUnit is
 				RegDst		: out  STD_LOGIC;
 				HILORead    : out  STD_LOGIC_VECTOR (1 downto 0);
 				HILOWrite   : out  STD_LOGIC;
-				isShftAmnt  : out  STD_LOGIC);
+				isShift  : out  STD_LOGIC);
 end ControlUnit;
 
 
@@ -62,38 +64,52 @@ begin
 			SignExtend <= '1';
 			BGEZ <= '0';
 			InstrtoReg <= '0';
+			AL <= '0';
 			
 			case ALU_Funct is
-				when "000000" | "000010" | "000011" => -- shift, takes argument from shftamnt 
+				when "000000" | "000010" | "000011" => -- sll, srl and sra 
 					ALUSrc <= '1';
+					isShift <= '1';
+					RegWrite <= '1';
+					
 					HILOWrite <= '0';
 					HILORead <= "00";
+				when "000100" | "000110" | "000111" => -- sllv, srlva and srav
+					ALUSrc <= '0';
+					isShift <= '1';
 					RegWrite <= '1';
-					isShftAmnt <= '1';
+					
+					HILOWrite <= '0';
+					HILORead <= "00";
 				when "011000" | "011001" | "011010" | "011011" => -- mult, multu, div, divu
+					ALUSrc <= '0';
+					isShift <= '0';
+					RegWrite <= '0';
 					HILOWrite <= '1';
 					HILORead <= "00";
-					ALUSrc <= '0';
-					RegWrite <= '0';
-					isShftAmnt <= '0';
 				when "010000" => -- MFHI
+					ALUSrc <= '0';
+					RegWrite <= '1';
+					isShift <= '0';
+					
 					HILORead <= "10";
 					HILOWrite <= '0';
+				when "010010" => --MFLO
 					ALUSrc <= '0';
 					RegWrite <= '1';
-					isShftAmnt <= '0';
-				when "010010" => --MFLO
+					isShift <= '0';
+					
 					HILORead <= "01";
 					HILOWrite <= '0';
-					ALUSrc <= '0';
-					RegWrite <= '1';
-					isShftAmnt <= '0';
+				when "001000" => -- JR
+					
+				
 				when others => 
 					ALUSrc <= '0';
 					HILOWrite <= '0';
 					HILORead <= "00";
+					isShift <= '0';
 					RegWrite <= '1';
-					isShftAmnt <= '0';
 			end case;
 
 		-- lw
@@ -113,6 +129,8 @@ begin
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			AL <= '0';
 
 		-- sw
 		when "101011" => 
@@ -131,6 +149,8 @@ begin
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			AL <= '0';
 		
 		-- beq
 		when "000100" => 
@@ -149,16 +169,17 @@ begin
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			AL <= '0';
 			
 		-- bgez
 		when "000001" =>
 			RegDst <= '-';
 			ALUSrc <= '0';
-			RegWrite <= '0';
 			MemtoReg <= '-';
 			MemRead <= '0';
 			MemWrite <= '0';
-			Branch <= '1';
+			Branch <= '0';
 			BGEZ <= '1';
 			Jump <= '0';
 			JR <= '0';
@@ -167,6 +188,10 @@ begin
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			
+			RegWrite <= Rt_FirstBit;
+			AL <= Rt_FirstBit;
 
 		-- jump
 		when "000010" =>
@@ -185,9 +210,10 @@ begin
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			AL <= '0';
 			
-		-- jr
-		when "000000" =>
+		when "000011" =>
 			RegDst <= '0';
 			ALUSrc <= '0';
 			RegWrite <= '0';
@@ -195,14 +221,16 @@ begin
 			MemRead <= '0';
 			MemWrite <= '0';
 			Branch <= '0';
-			Jump <= '0';
-			JR <= '1';
 			BGEZ <= '0';
+			Jump <= '1';
+			JR <= '0';
 			ALUOp <= "01";
 			SignExtend <= '1';
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			AL <= '1';
 			
 		-- ori, addi, slti
 		when "001101" | "001000" | "001010" => 
@@ -221,6 +249,8 @@ begin
 			InstrtoReg <= '0';
 			HILORead <= "00";
 			HILOWrite <= '0';
+			isShift <= '0';
+			AL <= '0';
 		
 		-- lui	
 		when "001111" =>
@@ -239,6 +269,8 @@ begin
 			InstrtoReg <= '1';
 			HILORead <= "00";
 			HILOWrite <= '0';			
+			isShift <= '0';
+			AL <= '0';
 			
 		when others => null;
 		

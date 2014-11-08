@@ -71,9 +71,11 @@ component ControlUnit is
     Port ( 	
 			opcode 		: in   STD_LOGIC_VECTOR (5 downto 0);
 			ALU_Funct   : in   STD_LOGIC_VECTOR (5 downto 0);
+			Rt_FirstBit : in   STD_LOGIC;
 			ALUOp 		: out  STD_LOGIC_VECTOR (1 downto 0);
 			Branch 		: out  STD_LOGIC;
 			BGEZ        : out  STD_LOGIC;
+			AL          : out  STD_LOGIC;
 			Jump	 		: out  STD_LOGIC;
 			JR          : out  STD_LOGIC;
 			MemRead 		: out  STD_LOGIC;	
@@ -86,7 +88,7 @@ component ControlUnit is
 			RegDst		: out  STD_LOGIC;
 			HILORead    : out  STD_LOGIC_VECTOR (1 downto 0);
 			HILOWrite   : out  STD_LOGIC;
-			isShftAmnt  : out  STD_LOGIC);
+			isShift  : out  STD_LOGIC);
 end component;
 
 ----------------------------------------------------------------
@@ -140,9 +142,11 @@ end component;
 ----------------------------------------------------------------				
  	signal	opcode 		:  STD_LOGIC_VECTOR (5 downto 0);
 	signal   ALU_Funct   :  STD_LOGIC_VECTOR (5 downto 0);
+	signal   Rt_FirstBit :  STD_LOGIC;
 	signal	ALUOp 		:  STD_LOGIC_VECTOR (1 downto 0);
 	signal	Branch 		:  STD_LOGIC;
 	signal   BGEZ        :  STD_LOGIC;
+	signal   AL          :  STD_LOGIC;
 	signal	Jump	 		:  STD_LOGIC;
 	signal   JR          :  STD_LOGIC;
 	signal	MemtoReg 	:  STD_LOGIC;
@@ -153,7 +157,7 @@ end component;
 	signal	RegDst		:  STD_LOGIC;
 	signal   HILORead    :  STD_LOGIC_VECTOR (1 downto 0);
 	signal   HILOWrite   :  STD_LOGIC;
-	signal   isShftAmnt  :  STD_LOGIC;
+	signal   isShift  :  STD_LOGIC;
 
 ----------------------------------------------------------------
 -- Register File Signals
@@ -220,10 +224,12 @@ ALU1 				: ALU port map
 ControlUnit1 	: ControlUnit port map
 						(
 						opcode 		=> opcode,
-                  ALU_Funct   => ALU_Funct,						
+                  ALU_Funct   => ALU_Funct,
+						Rt_FirstBit => Rt_FirstBit,
 						ALUOp 		=> ALUOp, 
 						Branch 		=> Branch, 
 						BGEZ        => BGEZ,
+						AL          => AL,
 						Jump 			=> Jump, 
 						JR          => JR,
 						MemRead 		=> MemRead, 
@@ -236,7 +242,7 @@ ControlUnit1 	: ControlUnit port map
 						RegDst 		=> RegDst,
 						HILORead    => HILORead,
 						HILOWrite   => HILOWrite,
-						isShftAmnt  => isShftAmnt
+						isShift  => isShift
 						);
 						
 ----------------------------------------------------------------
@@ -279,31 +285,35 @@ PC_next <= PC_out + X"00000004";
 -- Decode stage
 opcode <= Instr(31 downto 26); -- Updating Control Unit
 ALU_Funct <= Instr(5 downto 0); -- Updating ALU Function
+Rt_FirstBit <= Instr(20); -- for bgez and bgezal
 
-ImmData <= "000000000000000000000000000" & Instr(10 downto 6) when isShftAmnt = '1'  else
+ImmData <= "000000000000000000000000000" & Instr(10 downto 6) when isShift = '1'  else
            Instr(15 downto 0) & "0000000000000000" when InstrtoReg = '1' else
 			  "0000000000000000" & Instr(15 downto 0) when Instr(15) = '0' or SignExtend = '0' else
            "1111111111111111" & Instr(15 downto 0);
 
 -- Reading from registers
-ReadAddr1_Reg <= Instr(25 downto 21);
-ReadAddr2_Reg <= Instr(20 downto 16);
+ReadAddr1_Reg <= Instr(25 downto 21) when isShift = '0' else
+					  Instr(20 downto 16);
+ReadAddr2_Reg <= "00000"             when BGEZ = '1' else
+					  Instr(20 downto 16) when isShift = '0' else
+					  Instr(25 downto 21);
 
-WriteAddr_Reg <= Instr(20 downto 16) when RegDst = '0' else
+WriteAddr_Reg <= "11111"           when AL = '1' else
+					  Instr(20 downto 16) when RegDst = '0' else
 				     Instr(15 downto 11);
 	
 -- Executing stage
 ALU_InA <= ReadData1_Reg when InstrtoReg = '0' else
 			  X"00000000";
 ALU_InB <= ReadData2_Reg when ALUSrc = '0' else
-			  X"00000000" when BGEZ = '1' else
 	        ImmData;
 
 -- changing ALU Control
 with ALUOp select
 ALU_Control <= Instr(5 downto 0)   when "10",          -- r type instructions
 	            "100000"            when "00",          -- sw/ lw uses alu.add
-			      "100010"            when "01",          -- beq/bgez uses alu.sub
+			      "100010"            when "01",          -- beq/bgez/bgezal uses alu.sub
 					Instr(31 downto 26) when others;        -- all immediate uses their opcode
 
 -- calling for MemRead
@@ -314,10 +324,10 @@ Data_out <= ReadData2_Reg;
 
 -- HILO_Out is read when HILORead signal is updated
 -- calling for RegWrite
-WriteData_Reg <= HILO_Out when HILORead = "10" or HILORead = "01" else -- MFHI or MFLO 
-					  ALU_OutA when MemToReg = '0' and HILOWrite = '0' else -- ALU use HILOWrite to prevent writing mult/div results to general reg
-				     Data_in  when MemToReg = '1' and HILOWrite = '0' else  -- LW
-					  WriteData_Reg;
+WriteData_Reg <= PC_out + X"00000008"  when AL = '1' else -- And link instr, send PC + 8 to register 31
+					  HILO_Out when HILORead = "10" or HILORead = "01" else -- MFHI or MFLO 
+					  ALU_OutA when MemToReg = '0'  else -- ALU use HILOWrite to prevent writing mult/div results to general reg
+				     Data_in  when MemToReg = '1';
 					  
 -- calling to write in HILO registers
 HI_In <= ALU_OutB;
@@ -326,7 +336,7 @@ LO_In <= ALU_OutA;
 -- updating PC
 PC_temp <= PC_next(31 downto 28) & Instr(25 downto 0) & "00" when Jump = '1' else -- jump
 			  ReadData1_Reg  when JR = '1' else -- JR
-		    (ImmData(29 downto 0) & "00") +  PC_next when Branch = '1' and (ALU_Status(0) = '1' or (BGEZ = '1' and ALU_Status(3) = '0')) else -- beq, bgez
+		    (ImmData(29 downto 0) & "00") +  PC_next when (Branch = '1' and ALU_Status(0) = '1') or (BGEZ = '1' and ALU_Status(3) = '0') else -- beq, bgez
 		     PC_next;
 
 PC_in <= PC_temp;
