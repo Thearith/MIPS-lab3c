@@ -34,7 +34,8 @@ Port (Clk			: in	STD_LOGIC;
 		Result1		: out	STD_LOGIC_VECTOR (width-1 downto 0);
 		Result2		: out	STD_LOGIC_VECTOR (width-1 downto 0);
 		Status		: out	STD_LOGIC_VECTOR (3 downto 0); -- negative (sub), busy (multicycle only), overflow (add and sub), zero (sub)
-		Debug			: out	STD_LOGIC_VECTOR (width-1 downto 0));		
+		MIPS_Reset  : in  STD_LOGIC
+	);		
 end ALU;
 
 ------------------------------------------------------------------
@@ -139,7 +140,6 @@ signal mul_done         : STD_LOGIC := '0';
 ----------------------------------------------------------------------------
 signal Result1_multi		: STD_LOGIC_VECTOR (width-1 downto 0) := (others => '0'); 
 signal Result2_multi		: STD_LOGIC_VECTOR (width-1 downto 0) := (others => '0');
-signal Debug_multi		: STD_LOGIC_VECTOR (width-1 downto 0) := (others => '0'); 
 signal done		 			: STD_LOGIC := '0';
 
 begin
@@ -157,8 +157,8 @@ divider32 : divider generic map (width => width) port map ( clk => Clk, reset =>
 ----------------------------------------------------------------------------
 COMBINATIONAL_PROCESS : process (
 											Control, Operand1, Operand2, state, C_out,-- external inputs
-											S, shift_output, -- ouput from other components
-											Result1_multi, Result2_multi, Debug_multi, done -- from multi-cycle process(es)
+											S, shift_output, MIPS_Reset, -- ouput from other components
+											Result1_multi, Result2_multi, done -- from multi-cycle process(es)
 											)
 variable temp_overflow : std_logic;
 begin
@@ -166,24 +166,22 @@ begin
 Status(3 downto 0) <= "0000"; -- both statuses '0' by default 
 Result1 <= (others=>'0');
 Result2 <= (others=>'0');
-Debug <= (others=>'0');
 dir_right <= '0';
 arith_flag <= '0';
 n_state <= state;
-Debug_multi <= (others => '0');
 
 B <= Operand2;
 C_in <= '0';
 -- </default outputs>
 
 --reset
-if Control /= "011000" and Control /= "011001" and Control /= "011010" and Control /= "011011" then
+if MIPS_Reset = '1' then
 	n_state <= COMBINATIONAL;
 else
 
 case state is
 	when COMBINATIONAL =>
-		case Control(5 downto 0) is
+		case Control is
 		--and
 		when "100100" =>   -- takes 0 cycles to execute
 			Result1 <= Operand1 and Operand2;
@@ -191,7 +189,7 @@ case state is
 		--andu
 		
 		--or/ori
-		when "100101" | "001101" =>
+		when "100101"| "001101" =>
 			Result1 <= Operand1 or Operand2;
 		
 		--nor
@@ -280,7 +278,6 @@ case state is
 		if done = '1' then
 			Result1 <= Result1_multi;
 			Result2 <= Result2_multi;
-			Debug <= Debug_multi;
 			n_state <= COMBINATIONAL;
 			Status(2) <= '0';
 		else
@@ -311,8 +308,6 @@ MULTI_CYCLE_PROCESS : process (Clk) -- multi-cycle operations done here
 -- assume that Operand1 and Operand 2 do not change while multi-cycle operations are being performed 
 begin  
    if (Clk'event and Clk = '1') then 
-		if Control(5) = '1' then
-		end if;
 		done <= '0';
 		if n_state = MULTI_CYCLE then
 			case Control(5 downto 0) is

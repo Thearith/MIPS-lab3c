@@ -1,0 +1,1 @@
+-intstyle "ise" -incremental -lib "secureip" -o "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/tb_isim_beh.exe" -prj "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/tb_beh.prj" "work.tb" 

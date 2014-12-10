@@ -61,7 +61,7 @@ component ALU is
 			Result1		: out	STD_LOGIC_VECTOR (31 downto 0);
 			Result2		: out	STD_LOGIC_VECTOR (31 downto 0);
 			Status		: out	STD_LOGIC_VECTOR (3 downto 0); -- negative (sub), busy (multicycle only), overflow (add and sub), zero (sub)
-			Debug			: out	STD_LOGIC_VECTOR (31 downto 0));
+			MIPS_Reset  : in  STD_LOGIC);
 end component;
 
 ----------------------------------------------------------------
@@ -134,8 +134,7 @@ end component;
 	signal	ALU_OutA 		:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	ALU_OutB 		:  STD_LOGIC_VECTOR (31 downto 0);
 	signal	ALU_Control	   :  STD_LOGIC_VECTOR (5 downto 0);
-	signal	ALU_Status		:  STD_LOGIC_VECTOR (3 downto 0);			
-	signal   ALU_Debug      :  STD_LOGIC_VECTOR (31 downto 0);
+	signal	ALU_Status		:  STD_LOGIC_VECTOR (3 downto 0);
 
 ----------------------------------------------------------------
 -- Control Unit Signals
@@ -215,7 +214,7 @@ ALU1 				: ALU port map
 						Result1 			=> ALU_OutA, 
 						Result2 			=> ALU_OutB, 
 						Status  			=> ALU_Status,
-						Debug      		=> ALU_Debug
+						MIPS_Reset     => RESET
 						);
 						
 ----------------------------------------------------------------
@@ -324,7 +323,7 @@ Data_out <= ReadData2_Reg;
 
 -- HILO_Out is read when HILORead signal is updated
 -- calling for RegWrite
-WriteData_Reg <= PC_out + X"00000008"  when AL = '1' else -- And link instr, send PC + 8 to register 31
+WriteData_Reg <= PC_out + X"00000008"  when AL = '1' and (BGEZ = '1' and ALU_Status(3) = '0') else -- And link instr, send PC + 8 to register 31
 					  HILO_Out when HILORead = "10" or HILORead = "01" else -- MFHI or MFLO 
 					  ALU_OutA when MemToReg = '0'  else -- ALU use HILOWrite to prevent writing mult/div results to general reg
 				     Data_in;

@@ -1,0 +1,49 @@
+Running: C:\Xilinx\14.7\ISE_DS\ISE\bin\nt64\unwrapped\fuse.exe -intstyle ise -incremental -lib secureip -o C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/tb_isim_beh.exe -prj C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/tb_beh.prj work.tb 
+ISim P.20131013 (signature 0x7708f090)
+Number of CPUs detected in this system: 8
+Turning on mult-threading, number of parallel sub-compilation jobs: 16 
+Determining compilation order of HDL files
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/TOP.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/tb.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/shifter.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/RegFile.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/PC.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/nshifter.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/multiplier.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/MIPS.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/HILO.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/divider.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/ControlUnit.vhd" into library work
+Parsing VHDL file "C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/ALU.vhd" into library work
+Starting static elaboration
+Completed static elaboration
+Compiling package standard
+Compiling package std_logic_1164
+Compiling package std_logic_arith
+Compiling package std_logic_unsigned
+Compiling architecture arch_pc of entity PC [pc_default]
+Compiling package std_logic_signed
+Compiling architecture adder_arch of entity adder [\adder(32)\]
+Compiling architecture nshifter_archi of entity nshifter [\nshifter(1,32)\]
+Compiling architecture nshifter_archi of entity nshifter [\nshifter(2,32)\]
+Compiling architecture nshifter_archi of entity nshifter [\nshifter(4,32)\]
+Compiling architecture nshifter_archi of entity nshifter [\nshifter(8,32)\]
+Compiling architecture nshifter_archi of entity nshifter [\nshifter(16,32)\]
+Compiling architecture shifter_archi of entity shifter [\shifter(32)\]
+Compiling architecture adder_arch of entity adder [\adder(35)\]
+Compiling architecture multiplier_archi of entity multiplier [\multiplier(34)\]
+Compiling architecture adder_arch of entity adder [\adder(33)\]
+Compiling architecture divider_arch of entity divider [\divider(32)\]
+Compiling architecture behavioral of entity ALU [\ALU(32)\]
+Compiling architecture arch_controlunit of entity ControlUnit [controlunit_default]
+Compiling architecture arch_regfile of entity RegFile [regfile_default]
+Compiling architecture behavioral of entity HILO [hilo_default]
+Compiling architecture arch_mips of entity MIPS [mips_default]
+Compiling architecture arch_top of entity TOP [top_default]
+Compiling architecture behavior of entity tb
+Time Resolution for simulation is 1ps.
+Waiting for 1 sub-compilation(s) to finish...
+Compiled 42 VHDL Units
+Built simulation executable C:/Users/Sivly.Sivly-PC/Documents/GitHub/MIPS-lab3c/Lab3c/tb_isim_beh.exe
+Fuse Memory Usage: 36508 KB
+Fuse CPU Usage: 1700 ms
